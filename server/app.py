@@ -4,7 +4,7 @@ from flask import Flask, make_response, request, session
 from flask_migrate import Migrate
 from flask_restful import Api, Resource
 
-from models import db, User, UserSchema
+from models import db, User, UserSchema, Document, DocumentSchema
 
 app = Flask(__name__)
 app.secret_key = b'Y\xf1Xz\x00\xad|eQ\x80t \xca\x1a\x10K'
@@ -17,6 +17,11 @@ migrate = Migrate(app, db)
 db.init_app(app)
 
 api = Api(app)
+
+@app.before_request
+def check_if_logged_in():
+    if not session.get('user_id') and request.endpoint == 'document':
+        return {'error': 'Unauthorized'}, 401
 
 class Login(Resource):
 
@@ -83,7 +88,7 @@ class Document(Resource):
 api.add_resource(Login, '/login')
 api.add_resource(CheckSession, '/check_session')
 api.add_resource(Logout, '/logout')
-api.add_resource(Document, '/documents/<int:id>')
+api.add_resource(Document, '/documents/<int:id>', endpoint='document') # ensures this endpoint is specified for the before_request decorator
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
